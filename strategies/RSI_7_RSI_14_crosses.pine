@@ -1,0 +1,45 @@
+//@version=6
+// Author: Remiotore
+strategy("RSI 7 vs 14 with RSI 14 Zones", overlay=false, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+rsi7 = ta.rsi(close, 7)
+rsi14 = ta.rsi(close, 14)
+
+plot(rsi7, title="RSI 7", color=color.blue)
+plot(rsi14, title="RSI 14", color=color.orange)
+
+hline(70, "Overbought", color=color.gray)
+hline(30, "Oversold", color=color.gray)
+bgcolor((rsi7 >= 30 and rsi7 <= 70) ? color.new(color.gray, 90) : na)
+
+// Trailing stop value (0.1%)
+trail_offset = close * 0.001
+
+// Conditions
+canLong  = (rsi7 > rsi14)
+canShort = (rsi7 < rsi14)
+exitLong = (rsi7 < rsi14)
+exitShort = (rsi7 > rsi14)
+
+// Entry/Exit Logic
+if (canLong)
+    if (strategy.position_size <= 0)
+        strategy.close("Short")
+        strategy.entry("Long", strategy.long)
+        strategy.exit("TP/TS Long", from_entry="Long", limit=close * 1.01, trail_price=close, trail_offset=trail_offset)
+        alert("Long entry triggered", freq=alert.freq_once_per_bar)
+
+if (exitLong and strategy.position_size > 0)
+    strategy.close("Long")
+    alert("Long exit triggered", freq=alert.freq_once_per_bar)
+
+if (canShort)
+    if (strategy.position_size >= 0)
+        strategy.close("Long")
+        strategy.entry("Short", strategy.short)
+        strategy.exit("TP/TS Short", from_entry="Short", limit=close * 0.99, trail_price=close, trail_offset=trail_offset)
+        alert("Short entry triggered", freq=alert.freq_once_per_bar)
+
+if (exitShort and strategy.position_size < 0)
+    strategy.close("Short")
+    alert("Short exit triggered", freq=alert.freq_once_per_bar)
